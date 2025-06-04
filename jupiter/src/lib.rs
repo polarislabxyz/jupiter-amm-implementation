@@ -1,15 +1,11 @@
-anchor_gen::generate_cpi_crate!("idl.json");
-
-#[cfg(feature = "staging")]
-anchor_lang::declare_id!("JUP5jSkuNHeHLoapB97P7MpckomsS4kLSG1Y31VZoLv");
-#[cfg(not(feature = "staging"))]
-anchor_lang::declare_id!("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4");
+anchor_gen::generate_cpi_crate!("idls/jupiter_aggregator.json");
 
 use rand::{
     distributions::{Distribution, Uniform},
     seq::IteratorRandom,
 };
 use solana_sdk::pubkey;
+use solana_sdk::pubkey::Pubkey;
 
 // Now, we only support up to 8 authorities between [0, 1, 2, 3, 4, 5, 6, 7]. To create more authorities, we need to
 // add them in the monorepo. We can use from 0 up to 255 in order to prevent hot accounts.
@@ -58,13 +54,14 @@ pub fn find_jupiter_open_orders(market: &Pubkey, authority: &Pubkey) -> Pubkey {
 
 // Temporarily redefined it until solution is found
 pub mod jupiter_override {
+    use anchor_lang::prelude::*;
+    use anchor_lang::Discriminator;
     use anchor_lang::InstructionData;
-    use anchor_lang::{prelude::*, Discriminator};
-    use jupiter_amm_interface::Swap as InterfaceSwap;
+    use jupiter_amm_interface::Swap;
 
-    #[derive(AnchorSerialize, Debug, PartialEq, Clone)]
+    #[derive(AnchorSerialize, Clone)]
     pub struct RoutePlanStep {
-        pub swap: InterfaceSwap,
+        pub swap: Swap,
         pub percent: u8,
         pub input_index: u8,
         pub output_index: u8,
@@ -79,7 +76,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for Route {
-        const DISCRIMINATOR: [u8; 8] = crate::instruction::Route::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = &crate::instruction::Route::DISCRIMINATOR;
     }
 
     impl InstructionData for Route {}
@@ -93,7 +90,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for ExactOutRoute {
-        const DISCRIMINATOR: [u8; 8] = crate::instruction::ExactOutRoute::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = &crate::instruction::ExactOutRoute::DISCRIMINATOR;
     }
 
     impl InstructionData for ExactOutRoute {}
@@ -106,7 +103,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for RouteWithTokenLedger {
-        const DISCRIMINATOR: [u8; 8] = crate::instruction::RouteWithTokenLedger::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = &crate::instruction::RouteWithTokenLedger::DISCRIMINATOR;
     }
 
     impl InstructionData for RouteWithTokenLedger {}
@@ -121,7 +118,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for SharedAccountsRoute {
-        const DISCRIMINATOR: [u8; 8] = crate::instruction::SharedAccountsRoute::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = &crate::instruction::SharedAccountsRoute::DISCRIMINATOR;
     }
 
     impl InstructionData for SharedAccountsRoute {}
@@ -136,8 +133,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for SharedAccountsExactOutRoute {
-        const DISCRIMINATOR: [u8; 8] =
-            crate::instruction::SharedAccountsExactOutRoute::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = crate::instruction::SharedAccountsExactOutRoute::DISCRIMINATOR;
     }
 
     impl InstructionData for SharedAccountsExactOutRoute {}
@@ -151,7 +147,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for SharedAccountsRouteWithTokenLedger {
-        const DISCRIMINATOR: [u8; 8] =
+        const DISCRIMINATOR: &[u8] =
             crate::instruction::SharedAccountsRouteWithTokenLedger::DISCRIMINATOR;
     }
 

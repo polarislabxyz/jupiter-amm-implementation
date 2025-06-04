@@ -1,10 +1,11 @@
 use anyhow::Result;
 use spl_token::state::Account as TokenAccount;
+use spl_token_swap::solana_program::program_pack::Pack;
 use std::{collections::HashMap, convert::TryInto};
 
 use crate::math::swap_curve_info::get_swap_curve_result;
 use lazy_static::lazy_static;
-use solana_sdk::{program_pack::Pack, pubkey, pubkey::Pubkey};
+use solana_sdk::{pubkey, pubkey::Pubkey};
 use spl_token_swap::curve::base::SwapCurve;
 use spl_token_swap::{curve::calculator::TradeDirection, state::SwapV1};
 
@@ -93,7 +94,7 @@ impl Amm for SplTokenSwapAmm {
     fn from_keyed_account(keyed_account: &KeyedAccount, _amm_context: &AmmContext) -> Result<Self> {
         // Skip the first byte which is version
         let state = SwapV1::unpack(&keyed_account.account.data[1..])?;
-        let reserve_mints = [state.token_a_mint, state.token_b_mint];
+        let reserve_mints: [Pubkey; 2] = [state.token_a_mint, state.token_b_mint];
 
         let label = SPL_TOKEN_SWAP_PROGRAMS
             .get(&keyed_account.account.owner)

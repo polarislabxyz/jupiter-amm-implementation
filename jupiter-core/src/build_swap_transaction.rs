@@ -2,9 +2,7 @@ use itertools::Itertools;
 
 use anchor_lang::{prelude::*, InstructionData};
 use anyhow::{anyhow, Result};
-use solana_sdk::{
-    address_lookup_table_account::AddressLookupTableAccount, instruction::Instruction,
-};
+use solana_sdk::{address_lookup_table::AddressLookupTableAccount, instruction::Instruction};
 
 use jupiter::{
     self, find_event_authority, jupiter_override::RoutePlanStep as JupiterRoutePlanStep,
@@ -84,6 +82,8 @@ pub fn build_swap_accounts(
 ) -> Result<Vec<AccountMeta>> {
     let program = jupiter::ID;
     let event_authority = find_event_authority();
+    let platform_fee_account = platform_fee_account.unwrap_or(jupiter::ID);
+    let token_2022_program = token2022_program.unwrap_or(jupiter::ID);
     Ok(match (use_shared_accounts, swap_mode, token_ledger) {
         (true, SwapMode::ExactIn, Some(token_ledger)) => {
             jupiter::accounts::SharedAccountsRouteWithTokenLedger {
@@ -98,7 +98,7 @@ pub fn build_swap_accounts(
                 source_mint: *input_mint,
                 destination_mint: *output_mint,
                 platform_fee_account,
-                token2022_program,
+                token_2022_program,
                 token_ledger,
                 event_authority,
                 program,
@@ -117,7 +117,7 @@ pub fn build_swap_accounts(
             source_mint: *input_mint,
             destination_mint: *output_mint,
             platform_fee_account,
-            token2022_program,
+            token_2022_program,
             event_authority,
             program,
         }
@@ -134,7 +134,7 @@ pub fn build_swap_accounts(
             source_mint: *input_mint,
             destination_mint: *output_mint,
             platform_fee_account,
-            token2022_program,
+            token_2022_program,
             event_authority,
             program,
         }
@@ -146,7 +146,8 @@ pub fn build_swap_accounts(
             user_destination_token_account: *user_destination_token_account,
             destination_mint: *output_mint,
             platform_fee_account,
-            destination_token_account: optional_destination_token_account,
+            destination_token_account: optional_destination_token_account
+                .unwrap_or(*user_destination_token_account),
             token_ledger,
             event_authority,
             program,
@@ -159,7 +160,8 @@ pub fn build_swap_accounts(
             user_destination_token_account: *user_destination_token_account,
             destination_mint: *output_mint,
             platform_fee_account,
-            destination_token_account: optional_destination_token_account,
+            destination_token_account: optional_destination_token_account
+                .unwrap_or(*user_destination_token_account),
             event_authority,
             program,
         }
@@ -172,8 +174,13 @@ pub fn build_swap_accounts(
             source_mint: *input_mint,
             destination_mint: *output_mint,
             platform_fee_account,
-            destination_token_account: optional_destination_token_account,
-            token2022_program,
+            destination_token_account: optional_destination_token_account
+                .unwrap_or(*user_destination_token_account),
+            token_2022_program: if let Some(token2022_program) = token2022_program {
+                token2022_program
+            } else {
+                jupiter::ID
+            },
             event_authority,
             program,
         }

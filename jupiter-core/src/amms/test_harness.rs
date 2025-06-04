@@ -1,12 +1,10 @@
-use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anyhow::{Context, Result};
 use assert_matches::assert_matches;
 use async_trait::async_trait;
 use glob::glob;
-use jupiter::jupiter_override::RoutePlanStep;
 use lazy_static::lazy_static;
 use serde_json::{json, Value};
-use solana_account_decoder::{UiAccount, UiAccountEncoding};
+use solana_account_decoder::{encode_ui_account, UiAccount, UiAccountEncoding};
 use solana_client::{
     nonblocking,
     rpc_client::{RpcClient, RpcClientConfig},
@@ -23,6 +21,7 @@ use solana_sdk::{
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 use spl_token_2022::extension::StateWithExtensions;
 // use stakedex_sdk::test_utils::spl_stake_pool;
+use ahash::RandomState;
 use std::fs::remove_dir_all;
 use std::hint::black_box;
 use std::str::FromStr;
@@ -42,9 +41,9 @@ use crate::{
     constants,
     route::get_token_mints_permutations,
 };
-use jupiter::find_jupiter_open_orders;
+use jupiter::{find_jupiter_open_orders, jupiter_override::RoutePlanStep};
 use jupiter_amm_interface::{
-    AccountMap, Amm, AmmContext, AmmUserSetup, ClockRef, KeyedAccount, KeyedUiAccount, QuoteParams,
+    AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, KeyedUiAccount, QuoteParams,
     SwapAndAccountMetas, SwapMode, SwapParams,
 };
 use solana_sdk::pubkey;
@@ -171,15 +170,6 @@ impl AmmTestHarnessProgramTest {
             SwapMode::ExactOut => *TOKEN_MINT_TO_OUT_AMOUNT.get(destination_mint).unwrap(),
         };
 
-        let open_order_address = find_jupiter_open_orders(
-            &amm.key(),
-            if use_shared_accounts {
-                &self.program_test_authority.pubkey
-            } else {
-                &user
-            },
-        );
-
         let is_input_mint_token2022 = TOKEN2022_MINT_AND_IN_AMOUNT
             .iter()
             .any(|(mint, _)| mint == source_mint);
@@ -246,12 +236,12 @@ impl AmmTestHarnessProgramTest {
         }
 
         let swap_params = SwapParams {
+            swap_mode,
             source_mint: *source_mint,
             destination_mint: *destination_mint,
             source_token_account,
             destination_token_account,
             token_transfer_authority: token_authority,
-            open_order_address: Some(open_order_address),
             quote_mint_to_referrer: None,
             in_amount: amount,
             out_amount: amount,
@@ -293,46 +283,6 @@ impl AmmTestHarnessProgramTest {
 
         let mut ixs: Vec<Instruction> =
             vec![ComputeBudgetInstruction::set_compute_unit_limit(1_400_000)];
-
-        if let Some(AmmUserSetup::SerumDexOpenOrdersSetup { market, program_id }) =
-            amm.get_user_setup()
-        {
-            let create_open_orders_ix = if use_shared_accounts {
-                Instruction {
-                    program_id: jupiter::ID,
-                    accounts: jupiter::accounts::CreateProgramOpenOrders {
-                        open_orders: open_order_address,
-                        payer: user,
-                        program_authority: self.program_test_authority.pubkey,
-                        dex_program: program_id,
-                        system_program: system_program::ID,
-                        rent: sysvar::rent::ID,
-                        market,
-                    }
-                    .to_account_metas(None),
-                    data: jupiter::instruction::CreateProgramOpenOrders {
-                        _id: self.program_test_authority.id,
-                    }
-                    .data(),
-                }
-            } else {
-                Instruction {
-                    program_id: jupiter::ID,
-                    accounts: jupiter::accounts::CreateOpenOrders {
-                        open_orders: open_order_address,
-                        payer: user,
-                        dex_program: program_id,
-                        system_program: system_program::ID,
-                        rent: sysvar::rent::ID,
-                        market,
-                    }
-                    .to_account_metas(None),
-                    data: jupiter::instruction::CreateOpenOrders.data(),
-                }
-            };
-
-            ixs.push(create_open_orders_ix);
-        }
 
         ixs.push(swap_ix);
 
@@ -515,7 +465,7 @@ impl RpcSender for TestRpcSender {
         request: RpcRequest,
         params: serde_json::Value,
     ) -> std::result::Result<serde_json::Value, solana_client::client_error::ClientError> {
-        let mut banks_client = self.banks_client.clone();
+        let banks_client = self.banks_client.clone();
         let context = RpcResponseContext {
             slot: banks_client.get_root_slot().await.unwrap(),
             api_version: None,
@@ -524,9 +474,10 @@ impl RpcSender for TestRpcSender {
             RpcRequest::GetAccountInfo => {
                 let pubkey = Pubkey::from_str(params[0].as_str().unwrap()).unwrap();
                 let account = banks_client.get_account(pubkey).await.unwrap().unwrap();
+
                 Ok(serde_json::to_value(Response {
                     context,
-                    value: UiAccount::encode(
+                    value: encode_ui_account(
                         &pubkey,
                         &account,
                         UiAccountEncoding::Base64,
@@ -536,7 +487,7 @@ impl RpcSender for TestRpcSender {
                 })
                 .unwrap())
             }
-            RpcRequest::GetVersion => Ok(json!({"solana-core": "1.16.16"})),
+            RpcRequest::GetVersion => Ok(json!({"solana-core": "2.1.16"})),
             _ => Err(solana_client::client_error::ClientError {
                 request: Some(request),
                 kind: solana_client::client_error::ClientErrorKind::Custom(
@@ -655,13 +606,13 @@ impl AmmTestHarness {
     pub fn update_amm(&self, amm: &mut dyn Amm) {
         let accounts_to_update = amm.get_accounts_to_update();
 
-        let account_map = self
+        let account_map: HashMap<Pubkey, Account, RandomState> = self
             .client
             .get_multiple_accounts(&accounts_to_update)
             .unwrap()
             .into_iter()
             .zip(accounts_to_update)
-            .fold(HashMap::new(), |mut m, (account, address)| {
+            .fold(HashMap::default(), |mut m, (account, address)| {
                 if let Some(account) = account {
                     m.insert(address, account);
                 }
@@ -670,8 +621,8 @@ impl AmmTestHarness {
         amm.update(&account_map).unwrap();
     }
 
-    fn load_accounts_snapshot(&self) -> AccountsSnapshot {
-        let mut account_map = HashMap::new();
+    fn load_accounts_snapshot(&self) -> HashMap<Pubkey, Account, RandomState> {
+        let mut account_map: HashMap<Pubkey, Account, RandomState> = HashMap::default();
         for entry in glob(&format!(
             "tests/fixtures/accounts/{0}/*.json",
             self.directory_name()
@@ -702,7 +653,7 @@ impl AmmTestHarness {
     pub async fn load_program_test(
         &self,
         amm: &mut dyn Amm,
-        before_test_setup: Option<&mut impl FnMut(&dyn Amm, &mut HashMap<Pubkey, Account>)>,
+        before_test_setup: Option<&mut impl FnMut(&dyn Amm, &mut AccountMap)>,
     ) -> AmmTestHarnessProgramTest {
         use solana_program_test::ProgramTest;
 
@@ -715,13 +666,17 @@ impl AmmTestHarness {
         pt.add_program("jupiter", jupiter::ID, None);
 
         let modified_label = amm.label().to_lowercase().replace(' ', "_");
-        pt.add_program(&modified_label, amm.program_id(), None);
+        pt.add_program(
+            Box::leak(modified_label.into_boxed_str()),
+            amm.program_id(),
+            None,
+        );
 
         for (program_id, program_name) in amm.program_dependencies() {
             // if program_id == spl_stake_pool::ID {
             //     program_name = "spl_stake_pool".into(); // spl stake pool labels describe the state rather than the program
             // }
-            pt.add_program(&program_name, program_id, None);
+            pt.add_program(Box::leak(program_name.into_boxed_str()), program_id, None);
         }
 
         let mut accounts_snapshot = self.load_accounts_snapshot();
@@ -831,7 +786,6 @@ impl AmmTestHarness {
                 source_token_account: placeholder,
                 destination_token_account: placeholder,
                 token_transfer_authority: placeholder,
-                open_order_address: Some(Pubkey::default()),
                 quote_mint_to_referrer: None,
                 in_amount: *TOKEN_MINT_TO_IN_AMOUNT
                     .get(&source_mint)
@@ -841,6 +795,7 @@ impl AmmTestHarness {
                     .unwrap_or_else(|| panic!("No in amount for mint: {}", destination_mint)),
                 jupiter_program_id: &placeholder,
                 missing_dynamic_accounts_as_default: false,
+                swap_mode: SwapMode::ExactIn,
             })?;
 
             addresses_for_snapshot.extend(
@@ -883,7 +838,7 @@ impl AmmTestHarness {
                     }
                     let keyed_account = RpcKeyedAccount {
                         pubkey: address.to_string(),
-                        account: UiAccount::encode(
+                        account: encode_ui_account(
                             &address,
                             account,
                             UiAccountEncoding::Base64,
@@ -1061,7 +1016,7 @@ pub async fn take_snapshot(
     let account = client
         .get_account(&amm_key)
         .expect("Should find AMM in markets cache or on-chain");
-    let ui_account = UiAccount::encode(&amm_key, &account, UiAccountEncoding::Base64, None, None);
+    let ui_account = encode_ui_account(&amm_key, &account, UiAccountEncoding::Base64, None, None);
     let keyed_ui_account = KeyedUiAccount {
         pubkey: amm_id,
         ui_account,

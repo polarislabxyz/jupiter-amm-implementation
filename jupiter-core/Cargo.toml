@@ -5,12 +5,13 @@ description = ""
 edition = { workspace = true }
 
 [dependencies]
+ahash = "0.8.11"
 anchor-lang = { workspace = true }
 solana-sdk = { workspace = true }
 solana-client = { workspace = true }
 solana-account-decoder = { workspace = true }
-solana-program-test = "~1.16"
-spl-token-swap = { version = "3.0.0", features = ["no-entrypoint"] }
+solana-program-test = { workspace = true }
+spl-token-swap = { git = "https://github.com/jup-ag/solana-program-library.git", rev = "199de2208534f37fe077a0b1d7a9e17f305ed363" }
 serde_json = "1.0.82"
 anyhow = "1.0"
 serde = "1.0.140"
