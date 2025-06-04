@@ -41,7 +41,7 @@ use crate::{
     constants,
     route::get_token_mints_permutations,
 };
-use jupiter::{find_jupiter_open_orders, jupiter_override::RoutePlanStep};
+use jupiter::jupiter_override::RoutePlanStep;
 use jupiter_amm_interface::{
     AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, KeyedUiAccount, QuoteParams,
     SwapAndAccountMetas, SwapMode, SwapParams,
@@ -218,7 +218,7 @@ impl AmmTestHarnessProgramTest {
 
         // solution for amm that cant quote certain amount and also could be bug introducing, divide by 2 until can quote
         while quote_result.is_none() && quote_count < 10 {
-            amount = amount / 2;
+            amount /= 2;
             match amm.quote(&QuoteParams {
                 amount,
                 input_mint: *source_mint,
@@ -572,7 +572,7 @@ impl AmmTestHarness {
             "tests/fixtures/accounts/{0}/{1}.json",
             directory_name, self.key,
         );
-        let file = File::open(&file_path).expect(&format!("Snapshot file {file_path} exists"));
+        let file = File::open(&file_path).unwrap_or_else(|_| panic!("Snapshot file {file_path} exists"));
         let keyed_account: RpcKeyedAccount = serde_json::from_reader(file).unwrap();
         let account: Account = UiAccount::decode(&keyed_account.account).unwrap();
         let params_file_path = format!("tests/fixtures/accounts/{0}/params.json", directory_name);

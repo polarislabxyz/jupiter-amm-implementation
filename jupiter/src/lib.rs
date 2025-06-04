@@ -14,7 +14,7 @@ pub const AUTHORITY_SEED: &[u8] = b"authority";
 
 pub fn find_authorities() -> Vec<Pubkey> {
     (0..AUTHORITY_COUNT)
-        .map(|authority_id| find_jupiter_program_authority(authority_id as u8))
+        .map(find_jupiter_program_authority)
         .collect()
 }
 
@@ -76,7 +76,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for Route {
-        const DISCRIMINATOR: &[u8] = &crate::instruction::Route::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = crate::instruction::Route::DISCRIMINATOR;
     }
 
     impl InstructionData for Route {}
@@ -90,7 +90,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for ExactOutRoute {
-        const DISCRIMINATOR: &[u8] = &crate::instruction::ExactOutRoute::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = crate::instruction::ExactOutRoute::DISCRIMINATOR;
     }
 
     impl InstructionData for ExactOutRoute {}
@@ -103,7 +103,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for RouteWithTokenLedger {
-        const DISCRIMINATOR: &[u8] = &crate::instruction::RouteWithTokenLedger::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = crate::instruction::RouteWithTokenLedger::DISCRIMINATOR;
     }
 
     impl InstructionData for RouteWithTokenLedger {}
@@ -118,7 +118,7 @@ pub mod jupiter_override {
         pub platform_fee_bps: u8,
     }
     impl Discriminator for SharedAccountsRoute {
-        const DISCRIMINATOR: &[u8] = &crate::instruction::SharedAccountsRoute::DISCRIMINATOR;
+        const DISCRIMINATOR: &[u8] = crate::instruction::SharedAccountsRoute::DISCRIMINATOR;
     }
 
     impl InstructionData for SharedAccountsRoute {}
@@ -166,7 +166,7 @@ mod tests {
         }
         for _ in 0..100 {
             let id = find_jupiter_program_authority_id((8, 16));
-            assert!(id >= 8 && id < 16);
+            assert!((8..16).contains(&id));
         }
     }
 }
