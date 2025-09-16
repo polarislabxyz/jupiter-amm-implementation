@@ -74,6 +74,14 @@ pub static SPL_TOKEN_MINT_TO_IN_AMOUNT: LazyLock<HashMap<Pubkey, u64>> = LazyLoc
             pubkey!("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"),
             1_110_000_000,
         ),
+        (
+            pubkey!("9j2kAymLgnEL6cs7UiwCS7zCAn4PDY95Nz3hQQ8MGDWy"),
+            300_000_000_000,
+        ),
+        (
+            pubkey!("GxzwLLVJKw1RqEkjgg7E4GtD6Fw5KyzZWNNGipd4B2fm"),
+            72_000_000_000,
+        ),
     ])
 });
 
