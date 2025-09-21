@@ -35,7 +35,7 @@ solana-system-interface = { workspace = true }
 program-interfaces = { path = "../program-interfaces" }
 jupiter-aggregator-v6 = { path = "../jupiter-aggregator-v6" }
 jupiter-aggregator-common = { path = "../jupiter-aggregator-common" }
-obsidian-common = { git = "https://github.com/zenith-trade/obsidian-amm-common", branch = "main" }
+obsidian-common = { git = "https://github.com/polarislabxyz/obsidian-amm-common", branch = "main" }
 jupiter-common = { workspace = true }
 
 # SPL

@@ -6,6 +6,7 @@ use jupiter_amm_interface::{
 };
 use obsidian_common::{deserialize_pool, Pool, PoolExtension};
 use solana_sdk::program_pack::Pack;
+use solana_sdk::sysvar;
 use solana_sdk::{pubkey, pubkey::Pubkey};
 use spl_token::state::Account as TokenAccount;
 use std::{collections::HashMap, convert::TryInto, sync::LazyLock};
@@ -214,6 +215,7 @@ impl Amm for ObsidianAmm {
                 AccountMeta::new(*source_token_account, false),
                 AccountMeta::new(*destination_token_account, false),
                 AccountMeta::new_readonly(spl_token::id(), false),
+                AccountMeta::new_readonly(sysvar::instructions::id(), false), // Instruction sysvar for CPI introspection
             ],
         })
     }

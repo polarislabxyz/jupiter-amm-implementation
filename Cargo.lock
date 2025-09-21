@@ -2521,12 +2521,11 @@ dependencies = [
 [[package]]
 name = "obsidian-common"
 version = "0.1.0"
-source = "git+https://github.com/zenith-trade/obsidian-amm-common?branch=main#c5d0e407681019b3539b381fde5384566b6e7fe0"
+source = "git+https://github.com/polarislabxyz/obsidian-amm-common?branch=main#b7e6009a1f4085ffc6691fa9570570b4d741bcee"
 dependencies = [
  "bytemuck",
  "pinocchio",
  "pinocchio-pubkey",
- "shank",
 ]
 
 [[package]]
@@ -3260,52 +3259,6 @@ checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
  "digest 0.10.7",
  "keccak",
-]
-
-[[package]]
-name = "shank"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acacd11d5f6c23c917cba20b5958cc24a63ecbc9f4b5e0692b41bd8016eb44d5"
-dependencies = [
- "shank_macro",
-]
-
-[[package]]
-name = "shank_macro"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b9249dc9a94754dac8b18085d33a25038915877669564a17732e02c67fea036"
-dependencies = [
- "proc-macro2",
- "quote",
- "shank_macro_impl",
- "shank_render",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "shank_macro_impl"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb6a32de33f7c537e68c5061c99bf9859b19a725fa78d5c8282b16fbf9455fc5"
-dependencies = [
- "anyhow",
- "proc-macro2",
- "quote",
- "serde",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "shank_render"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7809e7ac6f979b0e3d9ddba8a4e8e73fe239f62bef9d953784e516ff08f526e4"
-dependencies = [
- "proc-macro2",
- "quote",
- "shank_macro_impl",
 ]
 
 [[package]]
