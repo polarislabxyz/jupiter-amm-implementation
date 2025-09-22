@@ -13,7 +13,7 @@ use std::{collections::HashMap, convert::TryInto, sync::LazyLock};
 
 pub mod obsidian_programs {
     use super::*;
-    pub const OBSIDIAN_AMM: Pubkey = pubkey!("5f14hM1CDuHPDJwz6Lb68sDT2JKmbLTutStbtGMuuFWC");
+    pub const OBSIDIAN_AMM: Pubkey = pubkey!("HBVw6bZtcCaezhcBrmfyXBSBRWCdv72271xQ4GPvms2z");
 }
 
 pub struct ObsidianAmm {
