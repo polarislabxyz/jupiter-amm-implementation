@@ -154,7 +154,7 @@ macro_rules! test_exact_out_amms {
 const ORCA_V2_SOL_USDC_POOL: Pubkey = pubkey!("EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U");
 const ORCA_V2_USDC_USDT_POOL: Pubkey = pubkey!("F13xvvx45jVGd84ynK3c8T89UejQVxjCLtmHfPmAXAHP");
 
-const OBSIDIAN_SOL_USDC_POOL: Pubkey = pubkey!("258BiAngdE1BkmPBkL4VKzN3a6BQDUAxytbG2HKjyT5Q");
+const OBSIDIAN_SOL_USDC_POOL: Pubkey = pubkey!("AYvT6ggDoyJSvCQ1hVXCJVfV4FfTR1i1JBbRPDgyVfyM");
 
 // You can run a single test by doing: `cargo test test_quote_<lower_case_constant>_<default | option_name> -- --nocapture`
 
