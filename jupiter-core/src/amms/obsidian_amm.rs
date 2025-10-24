@@ -167,6 +167,16 @@ impl Amm for ObsidianAmm {
             (quote_params.amount, output)
         };
 
+        // Check if output amount exceeds available reserve
+        let output_reserve = if quote_params.input_mint == self.reserve_mints[0] {
+            self.reserves[1]
+        } else {
+            self.reserves[0]
+        };
+        if output_amount > output_reserve {
+            return Err(anyhow::anyhow!("Requested output amount exceeds reserve"));
+        }
+
         // Validate output amount is reasonable
         if output_amount == 0 {
             return Err(anyhow::anyhow!("Quote resulted in zero output amount"));
@@ -207,7 +217,6 @@ impl Amm for ObsidianAmm {
             // Using TokenSwap as placeholder until Obsidian variant is added to jupiter-amm-interface
             swap: Swap::TokenSwap,
             account_metas: vec![
-                AccountMeta::new_readonly(self.program_id, false),
                 AccountMeta::new(*token_transfer_authority, true),
                 AccountMeta::new(self.key, false),
                 AccountMeta::new(self.reserve_vaults[0], false),
