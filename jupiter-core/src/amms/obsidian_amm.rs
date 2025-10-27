@@ -177,6 +177,50 @@ impl Amm for ObsidianAmm {
             return Err(anyhow::anyhow!("Requested output amount exceeds reserve"));
         }
 
+        // Check 10% treasury bounds - ensure output reserve stays above 10% of total liquidity
+        // To avoid overflow, we'll work with scaled values using u128
+        // Convert Y to X terms: (Y * multiplier_x) / mid_price
+        let y_in_x_terms = (self.reserves[1] as u128)
+            .checked_mul(self.state.multiplier_x as u128)
+            .and_then(|v| v.checked_div(self.state.mid_price_lamports as u128))
+            .and_then(|v| u64::try_from(v).ok())
+            .ok_or_else(|| anyhow::anyhow!("Y to X conversion overflow"))?;
+
+        let total_reserve = self.reserves[0]
+            .checked_add(y_in_x_terms)
+            .ok_or_else(|| anyhow::anyhow!("Total reserve calculation overflow"))?;
+
+        let min_reserve = total_reserve / 10;
+
+        // Only check the reserve being depleted (output side)
+        if quote_params.input_mint == self.reserve_mints[0] {
+            // User sells X, receives Y out - check Y reserve threshold
+            let remaining_y = self.reserves[1].saturating_sub(output_amount);
+            let remaining_y_in_x_terms = (remaining_y as u128)
+                .checked_mul(self.state.multiplier_x as u128)
+                .and_then(|v| v.checked_div(self.state.mid_price_lamports as u128))
+                .and_then(|v| u64::try_from(v).ok())
+                .ok_or_else(|| anyhow::anyhow!("Remaining Y to X conversion overflow"))?;
+
+            if remaining_y_in_x_terms < min_reserve {
+                return Err(anyhow::anyhow!(
+                    "Trade would leave Y reserve below 10% bound (remaining: {}, min: {})",
+                    remaining_y_in_x_terms,
+                    min_reserve
+                ));
+            }
+        } else {
+            // User sells Y, receives X out - check X reserve threshold
+            let remaining_x = self.reserves[0].saturating_sub(output_amount);
+            if remaining_x < min_reserve {
+                return Err(anyhow::anyhow!(
+                    "Trade would leave X reserve below 10% bound (remaining: {}, min: {})",
+                    remaining_x,
+                    min_reserve
+                ));
+            }
+        }
+
         // Validate output amount is reasonable
         if output_amount == 0 {
             return Err(anyhow::anyhow!("Quote resulted in zero output amount"));
