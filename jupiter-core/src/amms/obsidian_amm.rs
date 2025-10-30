@@ -261,8 +261,8 @@ impl Amm for ObsidianAmm {
             // Using TokenSwap as placeholder until Obsidian variant is added to jupiter-amm-interface
             swap: Swap::TokenSwap,
             account_metas: vec![
-                AccountMeta::new(*token_transfer_authority, true),
-                AccountMeta::new(self.key, false),
+                AccountMeta::new_readonly(*token_transfer_authority, true),
+                AccountMeta::new_readonly(self.key, false),
                 AccountMeta::new(self.reserve_vaults[0], false),
                 AccountMeta::new(self.reserve_vaults[1], false),
                 AccountMeta::new(*source_token_account, false),
