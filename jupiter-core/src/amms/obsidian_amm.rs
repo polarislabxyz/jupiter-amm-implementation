@@ -240,7 +240,7 @@ impl Amm for ObsidianAmm {
     }
 
     fn get_accounts_len(&self) -> usize {
-        7
+        8
     }
 
     fn get_swap_and_account_metas(&self, swap_params: &SwapParams) -> Result<SwapAndAccountMetas> {
